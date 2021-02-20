@@ -90,6 +90,8 @@ try {
       await plug.plugList[0].turnOff();
     }
   } else if (command === "cycle-all") {
+    const delayMs =
+      process.argv[3] === "--delay" ? Number(process.argv[4]) : 500;
     const allPlugDevices = allDevices.filter(
       (device) => device.type == AccessoryTypes.plug
     );
@@ -100,14 +102,15 @@ try {
     while (true) {
       const currentIdx = iteration % allPlugDevices.length;
       const nextIdx = (iteration + 1) % allPlugDevices.length;
-      //await allPlugDevices[currentIdx].plugList[0].turnOff();
+
       allPlugDevices[currentIdx].plugList[0].onOff = false;
       await tradfri.updateDevice(allPlugDevices[currentIdx]);
 
       allPlugDevices[nextIdx].plugList[0].onOff = true;
       await tradfri.updateDevice(allPlugDevices[nextIdx]);
 
-      await sleepMs(500);
+      await sleepMs(delayMs);
+
       iteration += 1;
     }
   } else {
