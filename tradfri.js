@@ -8,6 +8,9 @@ import dotenv from "dotenv";
 dotenv.config();
 const discovered = await discoverGateway(false);
 
+const sleepMs = (millis) =>
+  new Promise((resolve) => setTimeout(resolve, millis));
+
 const tradfri = new TradfriClient(discovered.host);
 try {
   const { identity, psk } = await tradfri.authenticate(
@@ -18,6 +21,9 @@ try {
   const allDevices = [];
   await tradfri
     .on("device updated", (device) => allDevices.push(device))
+    .on("error", (error) =>
+      console.log("tradfri error=" + JSON.stringify(error, null, 4))
+    )
     .observeDevices();
 
   const command = process.argv[2];
@@ -69,6 +75,41 @@ try {
       (d) => d.instanceId == targetInstanceId
     );
     await targetDevice.plugList[0].turnOff();
+  } else if (command === "turn-on-all") {
+    const allPlugDevices = allDevices.filter(
+      (device) => device.type == AccessoryTypes.plug
+    );
+    for (const plug of allPlugDevices) {
+      await plug.plugList[0].turnOn();
+    }
+  } else if (command === "turn-off-all") {
+    const allPlugDevices = allDevices.filter(
+      (device) => device.type == AccessoryTypes.plug
+    );
+    for (const plug of allPlugDevices) {
+      await plug.plugList[0].turnOff();
+    }
+  } else if (command === "cycle-all") {
+    const allPlugDevices = allDevices.filter(
+      (device) => device.type == AccessoryTypes.plug
+    );
+    for (const plug of allPlugDevices) {
+      await plug.plugList[0].turnOff();
+    }
+    let iteration = 0;
+    while (true) {
+      const currentIdx = iteration % allPlugDevices.length;
+      const nextIdx = (iteration + 1) % allPlugDevices.length;
+      //await allPlugDevices[currentIdx].plugList[0].turnOff();
+      allPlugDevices[currentIdx].plugList[0].onOff = false;
+      await tradfri.updateDevice(allPlugDevices[currentIdx]);
+
+      allPlugDevices[nextIdx].plugList[0].onOff = true;
+      await tradfri.updateDevice(allPlugDevices[nextIdx]);
+
+      await sleepMs(500);
+      iteration += 1;
+    }
   } else {
     console.log("usage: tradfri COMMAND");
     process.exit(1);
