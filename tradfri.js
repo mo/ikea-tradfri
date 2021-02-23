@@ -113,6 +113,56 @@ try {
 
       iteration += 1;
     }
+  } else if (command === "double-cycle-all") {
+    const delayMs =
+      process.argv[3] === "--delay" ? Number(process.argv[4]) : 500;
+    const allPlugDevices = allDevices.filter(
+      (device) => device.type == AccessoryTypes.plug
+    );
+    for (const plug of allPlugDevices) {
+      await plug.plugList[0].turnOff();
+    }
+    const cnt = allPlugDevices.length;
+    let idx = 0;
+    while (true) {
+      allPlugDevices[idx % cnt].plugList[0].onOff = false;
+      await tradfri.updateDevice(allPlugDevices[idx % cnt]);
+
+      allPlugDevices[(idx + 1) % cnt].plugList[0].onOff = true;
+      await tradfri.updateDevice(allPlugDevices[(idx + 1) % cnt]);
+
+      allPlugDevices[(idx + 2) % cnt].plugList[0].onOff = false;
+      await tradfri.updateDevice(allPlugDevices[(idx + 2) % cnt]);
+
+      allPlugDevices[(idx + 3) % cnt].plugList[0].onOff = true;
+      await tradfri.updateDevice(allPlugDevices[(idx + 3) % cnt]);
+
+      await sleepMs(delayMs);
+
+      idx += 1;
+    }
+  } else if (command === "two-adjacent-cycle-all") {
+    const delayMs =
+      process.argv[3] === "--delay" ? Number(process.argv[4]) : 500;
+    const allPlugDevices = allDevices.filter(
+      (device) => device.type == AccessoryTypes.plug
+    );
+    for (const plug of allPlugDevices) {
+      await plug.plugList[0].turnOff();
+    }
+    const cnt = allPlugDevices.length;
+    let idx = 0;
+    while (true) {
+      allPlugDevices[idx % cnt].plugList[0].onOff = false;
+      await tradfri.updateDevice(allPlugDevices[idx % cnt]);
+
+      allPlugDevices[(idx + 2) % cnt].plugList[0].onOff = true;
+      await tradfri.updateDevice(allPlugDevices[(idx + 2) % cnt]);
+
+      await sleepMs(delayMs);
+
+      idx += 1;
+    }
   } else {
     console.log("usage: tradfri COMMAND");
     process.exit(1);
